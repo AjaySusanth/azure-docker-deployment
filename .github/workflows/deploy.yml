@@ -24,37 +24,49 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      # 1. Capture the unique ID for this workflow run
+      - name: Set Unique Image Tag
+        id: set_tag
+        run: echo "IMAGE_TAG=${{ github.run_id }}" >> $GITHUB_OUTPUT
+
+      # 2. Build Docker image using the unique tag
       - name: Build Docker image
         run: |
-          docker build -t sample-node:latest .
+          docker build -t sample-node:${{ steps.set_tag.outputs.IMAGE_TAG }} .
 
-      - name: Login to Azure Container Registry
-        run: |
-          az acr login --name ajaystudyacr
+      # (Removed 'Login to Azure Container Registry' as it's not needed for push when authenticated)
 
+      # 3. Tag image for ACR
       - name: Tag image
         run: |
-          docker tag sample-node:latest ajaystudyacr.azurecr.io/sample-node:latest
+          ACR_LOGIN_SERVER="ajaystudyacr.azurecr.io"
+          IMAGE_TAG=${{ steps.set_tag.outputs.IMAGE_TAG }}
+          docker tag sample-node:$IMAGE_TAG $ACR_LOGIN_SERVER/sample-node:$IMAGE_TAG
 
+      # 4. Push image to ACR
       - name: Push image to ACR
         run: |
-          docker push ajaystudyacr.azurecr.io/sample-node:latest
+          ACR_LOGIN_SERVER="ajaystudyacr.azurecr.io"
+          IMAGE_TAG=${{ steps.set_tag.outputs.IMAGE_TAG }}
+          docker push $ACR_LOGIN_SERVER/sample-node:$IMAGE_TAG
 
+      # 5. Deploy to ACI using the unique tag and explicit credentials
       - name: Deploy to ACI
         run: |
-          # Deploy using the retrieved credentials
+          ACR_LOGIN_SERVER="ajaystudyacr.azurecr.io"
+          IMAGE_TAG=${{ steps.set_tag.outputs.IMAGE_TAG }}
+          
           az container create \
             --resource-group study-rg \
             --name sample-node-container \
-            --image ajaystudyacr.azurecr.io/sample-node:latest \
+            --image $ACR_LOGIN_SERVER/sample-node:$IMAGE_TAG \  # <--- ACI will deploy this UNIQUE tag
             --os-type Linux \
             --restart-policy Always \
             --cpu 1 \
             --memory 1 \
             --ports 3000 \
             --dns-name-label ajay-sample-node \
-            --registry-login-server ajaystudyacr.azurecr.io \
+            --registry-login-server $ACR_LOGIN_SERVER \
             --registry-username ajaystudyacr \
             --registry-password ${{ secrets.ACR_ADMIN_PASSWORD }} \
             --query "name"
-

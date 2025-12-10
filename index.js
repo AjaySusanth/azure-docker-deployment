@@ -3,7 +3,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-  res.send('Hello from a Dockerized Node app! Deplolyed using Github actions in Azure Container Instances 🚀');
+  res.send('Hello from a Dockerized Node app! Deplolyed using Github actions in Azure Container Instances');
 });
 
 app.listen(port, () => {
