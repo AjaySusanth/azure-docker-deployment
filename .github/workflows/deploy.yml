@@ -48,6 +48,7 @@ jobs:
             --name sample-node-container \
             --image ajaystudyacr.azurecr.io/sample-node:latest \
             --os-type Linux \
+            --restart-policy Always \
             --cpu 1 \
             --memory 1 \
             --ports 3000 \
