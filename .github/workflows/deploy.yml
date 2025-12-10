@@ -47,6 +47,7 @@ jobs:
             --resource-group study-rg \
             --name sample-node-container \
             --image ajaystudyacr.azurecr.io/sample-node:latest \
+            --os-type Linux \
             --cpu 1 \
             --memory 1 \
             --ports 3000 \
