@@ -42,6 +42,7 @@ jobs:
 
       - name: Deploy to ACI
         run: |
+          # Deploy using the retrieved credentials
           az container create \
             --resource-group study-rg \
             --name sample-node-container \
@@ -51,5 +52,7 @@ jobs:
             --ports 3000 \
             --dns-name-label ajay-sample-node \
             --registry-login-server ajaystudyacr.azurecr.io \
+            --registry-username ajaystudyacr \
+            --registry-password ${{ secrets.ACR_ADMIN_PASSWORD }} \
             --query "name"
 
