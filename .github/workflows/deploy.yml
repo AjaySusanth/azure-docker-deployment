@@ -1,0 +1,55 @@
+name: Build and Deploy to Azure Container Instance
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure Login via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t sample-node:latest .
+
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ajaystudyacr
+
+      - name: Tag image
+        run: |
+          docker tag sample-node:latest ajaystudyacr.azurecr.io/sample-node:latest
+
+      - name: Push image to ACR
+        run: |
+          docker push ajaystudyacr.azurecr.io/sample-node:latest
+
+      - name: Deploy to ACI
+        run: |
+          az container create \
+            --resource-group study-rg \
+            --name sample-node-container \
+            --image ajaystudyacr.azurecr.io/sample-node:latest \
+            --cpu 1 \
+            --memory 1 \
+            --ports 3000 \
+            --dns-name-label ajay-sample-node \
+            --registry-login-server ajaystudyacr.azurecr.io \
+            --query "name"
+
