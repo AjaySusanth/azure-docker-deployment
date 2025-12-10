@@ -32,34 +32,41 @@ jobs:
       # 2. Build Docker image using the unique tag
       - name: Build Docker image
         run: |
+          # Use the unique tag for the build
           docker build -t sample-node:${{ steps.set_tag.outputs.IMAGE_TAG }} .
 
-      # (Removed 'Login to Azure Container Registry' as it's not needed for push when authenticated)
+      # (The az acr login step is not strictly needed for docker push when authenticated via Azure Login, but we will keep it as requested.)
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ajaystudyacr
 
-      # 3. Tag image for ACR
+      # 3. Tag image for ACR (using the unique tag)
       - name: Tag image
         run: |
           ACR_LOGIN_SERVER="ajaystudyacr.azurecr.io"
           IMAGE_TAG=${{ steps.set_tag.outputs.IMAGE_TAG }}
+          # Tag with the unique ID
           docker tag sample-node:$IMAGE_TAG $ACR_LOGIN_SERVER/sample-node:$IMAGE_TAG
 
-      # 4. Push image to ACR
+      # 4. Push image to ACR (using the unique tag)
       - name: Push image to ACR
         run: |
           ACR_LOGIN_SERVER="ajaystudyacr.azurecr.io"
           IMAGE_TAG=${{ steps.set_tag.outputs.IMAGE_TAG }}
+          # Push the unique tag
           docker push $ACR_LOGIN_SERVER/sample-node:$IMAGE_TAG
 
-      # 5. Deploy to ACI using the unique tag and explicit credentials
+      # 5. Deploy to ACI using the unique tag
       - name: Deploy to ACI
         run: |
           ACR_LOGIN_SERVER="ajaystudyacr.azurecr.io"
           IMAGE_TAG=${{ steps.set_tag.outputs.IMAGE_TAG }}
           
+          # Deploy the unique tag, keeping the existing ACR Admin login for pull
           az container create \
             --resource-group study-rg \
             --name sample-node-container \
-            --image $ACR_LOGIN_SERVER/sample-node:$IMAGE_TAG \  # <--- ACI will deploy this UNIQUE tag
+            --image $ACR_LOGIN_SERVER/sample-node:$IMAGE_TAG \  # <--- Now uses the UNIQUE tag
             --os-type Linux \
             --restart-policy Always \
             --cpu 1 \
